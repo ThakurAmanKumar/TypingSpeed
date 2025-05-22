@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Speed Trainer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .text-display span {
+            position: relative;
+            line-height: 1.8;
+            font-size: 1.2rem;
+            transition: all 0.1s;
+        }
+        .text-display span.current {
+            background-color: rgba(147, 197, 253, 0.5);
+            border-radius: 2px;
+        }
+        .text-display span.correct {
+            color: #10b981;
+        }
+        .text-display span.incorrect {
+            color: #ef4444;
+            text-decoration: underline;
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.3s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }        
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-300">
+    <div class="container mx-auto max-w-4xl">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">Typing Speed Trainer</h1>
+            <button id="themeToggle" class="p-2 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
+                <i class="fas fa-moon dark:hidden"></i>
+                <i class="fas fa-sun hidden dark:inline"></i>
+            </button>
+        </div>
+
+        <div class="card bg-white rounded-lg shadow-lg p-6 mb-6 border border-gray-200 transition-colors duration-300">
+            <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="relative w-16 h-16">
+                        <svg class="progress-ring w-16 h-16" viewBox="0 0 50 50">
+                            <circle class="progress-ring__circle stroke-gray-200" stroke-width="4" fill="transparent" r="20" cx="25" cy="25" />
+                            <circle id="timerRing" class="progress-ring__circle stroke-blue-500" stroke-width="4" fill="transparent" r="20" cx="25" cy="25" stroke-dasharray="125.664" stroke-dashoffset="125.664" />
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span id="timer" class="font-bold text-lg">0</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500">Time</div>
+                        <div class="font-bold">seconds</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div class="text-center">
+                        <div class="text-sm text-gray-500">WPM</div>
+                        <div id="wpm" class="font-bold text-xl">0</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-gray-500">Accuracy</div>
+                        <div id="accuracy" class="font-bold text-xl">100%</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-gray-500">Mistakes</div>
+                        <div id="mistakes" class="font-bold text-xl">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <div class="flex justify-between mb-2">
+                    <label for="difficulty" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Difficulty</label>
+                    <div class="text-sm">
+                        <span id="bestScore" class="font-semibold text-blue-600 dark:text-blue-400">Best: 0 WPM</span>
+                    </div>
+                </div>
+                <select id="difficulty" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <option value="easy">Easy (short)</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="hard">Hard (long)</option>
+                </select>
+            </div>
+
+            <div id="textDisplay" class="text-display bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-6 min-h-32 border border-gray-200 dark:border-gray-600"></div>
+
+            <div class="relative">
+                <input type="text" id="userInput" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white" placeholder="Start typing here..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <button id="restartBtn" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-500 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-full p-2">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="resultModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="card bg-white dark:bg-gray-700 rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+                <h2 class="text-2xl font-bold mb-4 text-center dark:text-white">Results</h2>
+                
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="text-center p-3 bg-gray-100 dark:bg-gray-600 rounded-lg">
+                        <div class="text-sm text-gray-500 dark:text-gray-300">Words Per Minute</div>
+                        <div id="resultWpm" class="text-2xl font-bold text-blue-600 dark:text-blue-400">0</div>
+                    </div>
+                    <div class="text-center p-3 bg-gray-100 dark:bg-gray-600 rounded-lg">
+                        <div class="text-sm text-gray-500 dark:text-gray-300">Accuracy</div>
+                        <div id="resultAccuracy" class="text-2xl font-bold text-green-600 dark:text-green-400">100%</div>
+                    </div>
+                    <div class="text-center p-3 bg-gray-100 dark:bg-gray-600 rounded-lg">
+                        <div class="text-sm text-gray-500 dark:text-gray-300">Time</div>
+                        <div id="resultTime" class="text-xl font-bold">0s</div>
+                    </div>
+                    <div class="text-center p-3 bg-gray-100 dark:bg-gray-600 rounded-lg">
+                        <div class="text-sm text-gray-500 dark:text-gray-300">Mistakes</div>
+                        <div id="resultMistakes" class="text-xl font-bold text-red-600 dark:text-red-400">0</div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="dark:text-gray-300">Best Score</span>
+                        <span id="resultBestScore" class="font-semibold dark:text-white">0 WPM</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                        <div id="progressBar" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <button id="closeModalBtn" class="w-full btn-primary bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                    Try Again
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const textDisplay = document.getElementById('textDisplay');
+            const userInput = document.getElementById('userInput');
+            const timerElement = document.getElementById('timer');
+            const wpmElement = document.getElementById('wpm');
+            const accuracyElement = document.getElementById('accuracy');
+            const mistakesElement = document.getElementById('mistakes');
+            const restartBtn = document.getElementById('restartBtn');
+            const difficultySelect = document.getElementById('difficulty');
+            const bestScoreElement = document.getElementById('bestScore');
+            const resultModal = document.getElementById('resultModal');
+            const resultWpm = document.getElementById('resultWpm');
+            const resultAccuracy = document.getElementById('resultAccuracy');
+            const resultTime = document.getElementById('resultTime');
+            const resultMistakes = document.getElementById('resultMistakes');
+            const resultBestScore = document.getElementById('resultBestScore');
+            const progressBar = document.getElementById('progressBar');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const timerRing = document.getElementById('timerRing');
+
+            const sampleTexts = {
+                easy: [
+                    "The quick brown fox jumps over the lazy dog.",
+                    "Programming is the art of telling another human what one wants the computer to do.",
+                    "To be or not to be, that is the question.",
+                    "Hello, world!",
+                    "Practice makes perfect.",
+                    "A journey of a thousand miles begins with a single step.",
+                    "Keep it simple, stupid.",
+                    "All that glitters is not gold.",
+                    "Knowledge is power.",
+                    "Time flies when you're having fun.",
+                    "Better late than never.",
+                    "Actions speak louder than words.",
+                    "Easy come, easy go.",
+                    "Every cloud has a silver lining.",
+                    "Look before you leap.",
+                    "Honesty is the best policy.",
+                    "Where there’s a will, there’s a way.",
+                    "Don’t count your chickens before they hatch.",
+                    "Rome wasn’t built in a day.",
+                    "You can’t judge a book by its cover.",
+                    "The pen is mightier than the sword.",
+                    "Birds of a feather flock together.",
+                    "Curiosity killed the cat.",
+                    "Don’t put all your eggs in one basket.",
+                    "Fortune favors the brave.",
+                    "If it ain’t broke, don’t fix it.",
+                    "It takes two to tango.",
+                    "Laughter is the best medicine.",
+                    "No pain, no gain.",
+                    "The early bird catches the worm.",
+                    "Two heads are better than one."
+                ],
+
+                medium: [
+                    "The ability to type quickly and accurately is an essential skill in today's digital world. Whether you're writing emails, coding, or chatting with friends, good typing skills can save you time and make you more productive.",
+                    "JavaScript is a versatile programming language that powers the interactive elements of websites. Learning JavaScript opens up opportunities to create dynamic web applications and enhance user experiences.",
+                    "Practice makes perfect. This old adage holds true for typing as well. The more you practice, the more comfortable you'll become with the keyboard, and the faster and more accurate your typing will be.",
+                    "Understanding the fundamentals of computer programming can greatly enhance problem-solving skills and open up new career paths in technology.",
+                    "Effective communication is key in both personal and professional settings, and the ability to express ideas clearly can lead to better collaboration and success.",
+                    "Typing with proper finger placement and posture reduces strain and prevents injuries, enabling longer and more efficient typing sessions.",
+                    "Learning new programming languages broadens your technical skill set and allows you to adapt to different project requirements with ease.",
+                    "In the world of web development, combining HTML, CSS, and JavaScript skills allows you to create visually appealing and interactive websites.",
+                    "Using shortcuts and hotkeys can significantly increase your productivity by reducing the time spent on repetitive tasks.",
+                    "Consistent practice not only improves typing speed but also builds muscle memory, making the process more natural and effortless.",
+                    "Debugging code is a critical skill that involves identifying and fixing errors, which helps ensure software runs smoothly and efficiently.",
+                    "Typing tests and exercises designed for different difficulty levels can help learners gradually improve their speed and accuracy.",
+                    "Keyboard layouts like QWERTY and Dvorak are designed to optimize typing efficiency, but the best choice depends on individual comfort and usage.",
+                    "Writing clean and well-documented code makes it easier for others to understand and maintain software projects.",
+                    "The rise of remote work has increased the importance of digital communication and computer proficiency across various industries.",
+                    "Understanding algorithms and data structures is fundamental for solving complex problems efficiently in computer science.",
+                    "Time management skills complement typing proficiency by helping you prioritize tasks and meet deadlines effectively.",
+                    "Collaborating on coding projects using platforms like GitHub enhances teamwork and version control capabilities.",
+                    "Online coding challenges and competitions provide valuable opportunities to test your skills and learn new techniques.",
+                    "Adapting to new technology trends requires continuous learning and staying updated with the latest developments in the field.",
+                    "Typing speed and accuracy can be improved through regular practice, proper technique, and the use of specialized software tools.",
+                    "Automation tools help streamline repetitive tasks, allowing developers to focus on more complex problem-solving activities.",
+                    "Mobile technology has revolutionized communication, making typing skills relevant not just on computers but also on smartphones and tablets.",
+                    "Cloud computing offers scalable solutions for data storage and processing, impacting how applications are developed and deployed.",
+                    "User experience design is a crucial aspect of software development that ensures applications are intuitive and user-friendly.",
+                    "Version control systems like Git help manage changes in codebases, facilitating collaboration among multiple developers.",
+                    "Cybersecurity awareness is essential in protecting personal and organizational data from potential threats and attacks.",
+                    "Artificial intelligence and machine learning are transforming many industries by automating complex tasks and providing intelligent insights.",
+                    "Keyboard ergonomics and the design of typing environments can significantly affect comfort and productivity over long periods.",
+                    "Many programmers benefit from using integrated development environments (IDEs) that offer tools for coding, debugging, and testing.",
+                    "Open source projects encourage community collaboration and knowledge sharing, accelerating technological advancement.",
+                    "Regularly updating software and systems is vital to maintain security and improve functionality."
+                ],
+                hard: [
+                    "The history of typing dates back to the 19th century with the invention of the typewriter. Christopher Latham Sholes, along with his colleagues, developed the QWERTY keyboard layout in the 1870s, which was designed to prevent mechanical typewriter keys from jamming. This layout has persisted into the computer age, despite the fact that jamming is no longer an issue. Many alternative keyboard layouts have been proposed, such as Dvorak and Colemak, which claim to offer more efficient typing experiences, but QWERTY remains dominant due to its widespread adoption and the difficulty of changing established habits.",
+                    "Touch typing is a method of typing without looking at the keyboard. The fingers rest on the home row keys (ASDF for the left hand and JKL; for the right hand), and each finger moves to hit other keys in its vicinity. This technique allows for faster typing speeds and reduces errors. Professional typists can reach speeds of over 100 words per minute with high accuracy. Learning to touch type requires practice and patience, but the long-term benefits in terms of speed and reduced strain make it a worthwhile investment for anyone who spends significant time at a computer.",
+                    "Ergonomics plays a crucial role in typing comfort and efficiency. Proper posture, keyboard placement, and hand position can prevent repetitive strain injuries and make typing more comfortable over long periods. The keyboard should be positioned so that your elbows are at a 90-degree angle and your wrists are straight. Many ergonomic keyboards are designed to minimize strain by splitting the keyboard or providing wrist support. Taking regular breaks and performing stretching exercises can also help prevent discomfort and injury associated with prolonged typing sessions.",
+                    "Cognitive load theory suggests that the brain can only process a limited amount of information at once, which influences how quickly and accurately one can type while multitasking or under pressure.",
+                    "Mechanical keyboards use individual switches for each key, which provide tactile feedback and durability that many typists prefer over membrane keyboards.",
+                    "Latency in keyboard input can affect typing performance in competitive gaming or high-speed data entry environments, making low-latency hardware and software setups desirable.",
+                    "The advent of predictive text and autocorrect in modern software has changed how users approach typing, sometimes reducing the emphasis on perfect accuracy but requiring vigilance to avoid errors.",
+                    "Key rollover and anti-ghosting are features in gaming keyboards that allow multiple keys to be registered simultaneously without conflicts, improving input reliability.",
+                    "The implementation of keyboard firmware updates can optimize performance and add new functionalities, demonstrating how hardware and software co-evolve to enhance typing experiences.",
+                    "Historical attempts at alternative keyboard layouts such as the Dvorak Simplified Keyboard aimed to reduce finger movement and increase typing speed but struggled to replace the entrenched QWERTY standard.",
+                    "Typing speed tests are commonly used benchmarks to assess proficiency and track improvement, often focusing on words per minute (WPM) and accuracy percentages.",
+                    "Voice-to-text technology presents an alternative to traditional typing, leveraging natural language processing to convert speech into written text, though it requires different skill sets and has its own limitations.",
+                    "Keyboard shortcuts and macros can streamline workflows in complex software environments, reducing repetitive keystrokes and enhancing productivity for advanced users.",
+                    "Biometric technologies, such as fingerprint and facial recognition, are increasingly integrated into keyboards and laptops, adding layers of security without compromising usability.",
+                    "Programming often demands the use of special characters and syntax, making familiarity with various keyboard layouts and input methods crucial for developer efficiency.",
+                    "In multilingual typing, switching between different alphabets and special characters challenges typists and has led to innovations such as programmable keyboards and input method editors (IMEs).",
+                    "Research in human-computer interaction explores how adaptive keyboards and predictive models can tailor typing experiences to individual users' habits and needs.",
+                    "The decline of physical keyboards in favor of touchscreen devices has prompted studies on haptic feedback and alternative input modalities to retain typing effectiveness.",
+                    "Advanced typing tutors incorporate gamification and AI-driven feedback to personalize learning paths and accelerate skill acquisition.",
+                    "Keyboard design also considers acoustics; some users prefer quieter keys, while others favor audible feedback to reinforce typing rhythm.",
+                    "Typing ergonomics extends beyond posture to include ambient factors such as lighting, desk height, and chair support, all influencing comfort and endurance.",
+                    "Historical typewriters had mechanical limitations that influenced the design of typing systems and the development of early typing education standards.",
+                    "Adaptive technologies enable users with disabilities to access keyboards through alternative inputs such as eye-tracking, speech recognition, or single-switch scanning.",
+                    "The integration of keyboards into virtual and augmented reality environments poses new challenges and opportunities for text input design.",
+                    "Quantum computing, though still emerging, may one day impact how information is processed and how humans interact with computational devices, including typing interfaces.",
+                    "The evolution of keyboard hardware includes innovations like flexible, rollable, and projection keyboards, expanding possibilities for portability and convenience.",
+                    "Cloud-based applications and remote desktop environments require efficient typing and command inputs to optimize user experience across varied network conditions.",
+                    "Studies show that frequent typists develop neural adaptations that improve motor coordination and cognitive processing related to language and text entry.",
+                    "Ergonomic assessment tools help identify risk factors for repetitive strain injuries, guiding individuals in choosing appropriate keyboard setups and usage habits.",
+                    "The role of typing in education has transformed with digital literacy becoming a fundamental competency alongside reading and writing.",
+                    "Emerging standards in keyboard manufacturing emphasize sustainability, including recyclable materials and energy-efficient production processes."
+                ]
+            };
+
+            let currentText = '';
+            let timer = 0;
+            let timerInterval;
+            let startTime;
+            let isTyping = false;
+            let correctChars = 0;
+            let totalChars = 0;
+            let mistakes = 0;
+            let currentCharIndex = 0;
+            let bestScore = localStorage.getItem('bestWPM') || 0;
+
+            updateBestScoreDisplay();
+            loadNewText();
+
+            userInput.addEventListener('input', handleInput);
+            userInput.addEventListener('focus', startTyping);
+            restartBtn.addEventListener('click', resetGame);
+            difficultySelect.addEventListener('change', resetGame);
+            closeModalBtn.addEventListener('click', closeResultModal);
+            themeToggle.addEventListener('click', toggleTheme);
+
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark-mode');
+            }
+
+            function loadNewText() {
+                const difficulty = difficultySelect.value;
+                const texts = sampleTexts[difficulty];
+                currentText = texts[Math.floor(Math.random() * texts.length)];
+                renderText();
+                userInput.value = '';
+                userInput.focus();
+            }
+
+            function renderText() {
+                textDisplay.innerHTML = '';
+                totalChars = currentText.length;
+                
+                currentText.split('').forEach((char, index) => {
+                    const span = document.createElement('span');
+                    span.textContent = char;
+                    if (index === 0) {
+                        span.classList.add('current');
+                    }
+                    textDisplay.appendChild(span);
+                });
+            }
+
+            function startTyping() {
+                if (!isTyping && currentCharIndex === 0) {
+                    isTyping = true;
+                    startTime = new Date().getTime();
+                    timerInterval = setInterval(updateTimer, 1000);
+                }
+            }
+
+            function handleInput(e) {
+                const inputText = e.target.value;
+                const currentChar = inputText[inputText.length - 1];
+                
+                if (!isTyping && inputText.length > 0) {
+                    startTyping();
+                }
+                
+                if (inputText.length > currentText.length) {
+                    e.target.value = inputText.substring(0, currentText.length);
+                    return;
+                }
+                
+                updateTextDisplay(inputText);
+                updateMetrics();
+                
+                if (inputText.length === currentText.length) {
+                    finishTyping();
+                }
+            }
+
+            function updateTextDisplay(inputText) {
+                const spans = textDisplay.querySelectorAll('span');
+                
+                spans.forEach(span => {
+                    span.classList.remove('current', 'correct', 'incorrect');
+                });
+                
+                for (let i = 0; i < inputText.length; i++) {
+                    if (i < currentText.length) {
+                        if (inputText[i] === currentText[i]) {
+                            spans[i].classList.add('correct');
+                        } else {
+                            spans[i].classList.add('incorrect');
+                        }
+                    }
+                }
+                
+                if (inputText.length < currentText.length) {
+                    spans[inputText.length].classList.add('current');
+                }
+                
+                currentCharIndex = inputText.length;
+            }
+
+            function updateMetrics() {
+                const inputText = userInput.value;
+                correctChars = 0;
+                mistakes = 0;
+                
+                for (let i = 0; i < inputText.length; i++) {
+                    if (inputText[i] === currentText[i]) {
+                        correctChars++;
+                    } else {
+                        mistakes++;
+                    }
+                }
+                
+                const accuracy = totalChars > 0 ? Math.round((correctChars / totalChars) * 100) : 100;
+                const elapsedMinutes = timer / 60;
+                const wpm = elapsedMinutes > 0 ? Math.round((correctChars / 5) / elapsedMinutes) : 0;
+                
+                accuracyElement.textContent = `${accuracy}%`;
+                mistakesElement.textContent = mistakes;
+                wpmElement.textContent = wpm;
+            }
+
+            function updateTimer() {
+                timer++;
+                timerElement.textContent = timer;
+                
+                const circumference = 125.664; 
+                const offset = circumference - (timer % 60) / 60 * circumference;
+                timerRing.style.strokeDashoffset = offset;
+            }
+
+            function finishTyping() {
+                clearInterval(timerInterval);
+                isTyping = false;
+                
+                const elapsedMinutes = timer / 60;
+                const wpm = Math.round((correctChars / 5) / elapsedMinutes);
+                const accuracy = Math.round((correctChars / totalChars) * 100);
+                
+                if (wpm > bestScore) {
+                    bestScore = wpm;
+                    localStorage.setItem('bestWPM', bestScore);
+                    updateBestScoreDisplay();
+                }
+                
+                showResults(wpm, accuracy, timer, mistakes);
+            }
+
+            function showResults(wpm, accuracy, time, mistakes) {
+                resultWpm.textContent = wpm;
+                resultAccuracy.textContent = `${accuracy}%`;
+                resultTime.textContent = `${time}s`;
+                resultMistakes.textContent = mistakes;
+                resultBestScore.textContent = `${bestScore} WPM`;
+                
+                const progressPercentage = bestScore > 0 ? Math.min(100, (wpm / bestScore) * 100) : 100;
+                progressBar.style.width = `${progressPercentage}%`;
+                
+                resultModal.classList.remove('hidden');
+            }
+
+            function closeResultModal() {
+                resultModal.classList.add('hidden');
+                resetGame();
+            }
+
+            function resetGame() {
+                clearInterval(timerInterval);
+                timer = 0;
+                timerElement.textContent = '0';
+                isTyping = false;
+                correctChars = 0;
+                mistakes = 0;
+                currentCharIndex = 0;
+                
+                timerRing.style.strokeDashoffset = '125.664';
+                
+                wpmElement.textContent = '0';
+                accuracyElement.textContent = '100%';
+                mistakesElement.textContent = '0';
+                
+                loadNewText();
+            }
+
+            function updateBestScoreDisplay() {
+                bestScoreElement.textContent = `Best: ${bestScore} WPM`;
+            }            
+        });
+    </script>
+</body>
+</html>
