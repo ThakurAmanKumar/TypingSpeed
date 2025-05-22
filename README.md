@@ -6,7 +6,7 @@ A modern and responsive **Typing Speed Trainer** web app built using **HTML**, *
 
 ## 🚀 Live Demo
 
-🔗 [https://github.com/ThakurAmanKumar/TypingSpeedTrainer](https://github.com/ThakurAmanKumar/TypingSpeedTrainer)
+🔗 [https://typing-speed-checker-silk.vercel.app](https://typing-speed-checker-silk.vercel.app)
 
 ---
 
@@ -33,8 +33,6 @@ A modern and responsive **Typing Speed Trainer** web app built using **HTML**, *
 - **HTML5**
 - **Tailwind CSS** (via CDN)
 - **JavaScript (Vanilla)**
-- **Font Awesome** (for icons)
-
 ---
 ## Project Structure
 
